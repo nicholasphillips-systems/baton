@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Search shared references and current handoffs. Add --history for completed runs."""
+import argparse
+from pathlib import Path
+import re
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import workflow as w
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("words", nargs="*")
+    parser.add_argument("-n", type=int, default=5)
+    parser.add_argument("-v", action="store_true", help="Include a short matching line")
+    parser.add_argument("--history", action="store_true", help="Include completed run notes and archived references")
+    args = parser.parse_args()
+    words = re.findall(r"\w+", " ".join(args.words).lower())
+    if not words:
+        parser.print_help()
+        return 0
+    matches = []
+    root = w.notes_dir()
+    categories = ["Projects", "Systems", "Knowledge", "Decisions", "Inbox"]
+    if args.history:
+        categories.append("Runs")
+    for folder in [root, *[root / name for name in categories]]:
+        if not folder.is_dir():
+            continue
+        for path in folder.glob("*.md"):
+            if path.is_symlink() or path.stat().st_size > 512000:
+                continue
+            text = path.read_text(errors="replace")
+            if not args.history and re.search(r"^status:\s*(archived|historical|retired|superseded)\s*$", text, re.M | re.I):
+                continue
+            name = path.stem.replace("-", " ").lower()
+            if not all(word in name + " " + text.lower() for word in words):
+                continue
+            score = sum((8 if word in name else 0) + min(text.lower().count(word), 4) for word in words)
+            if score:
+                line = next((line.strip() for line in text.splitlines()
+                             if any(word in line.lower() for word in words) and not line.startswith(("tags:", "related:"))), "")
+                matches.append((score, path.stat().st_mtime_ns, str(path), line[:200]))
+    for key, project in w.load()["projects"].items():
+        saved = project.get("handoff")
+        if saved:
+            text = key + " " + saved["summary"] + " " + saved["next"]
+            if not all(word in text.lower() for word in words):
+                continue
+            score = sum(text.lower().count(word) for word in words)
+            if score:
+                matches.append((score + 10, 0, "desk context " + key, saved["summary"][:200]))
+    matches.sort(reverse=True)
+    for _, _, path, line in matches[:max(0, args.n)]:
+        print(path)
+        if args.v:
+            print("  " + line)
+    if not matches:
+        print("No shared references matched. Use map to find project files.")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (w.WorkflowError, OSError) as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(1)

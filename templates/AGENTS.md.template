@@ -1,0 +1,26 @@
+# Shared project workflow
+
+Follow the user's current request and the project's own instructions. Keep progress reports short and preserve existing work.
+
+## Start a session
+
+- Find the existing project with `desk projects` or `map <words>`.
+- Read `desk context <project>`, then inspect the actual project files.
+- Check `desk list` and coordinate overlapping edits directly.
+- Register the real work folder with `desk start <project-or-folder> "<task>" <agent>`.
+- Use a native Git worktree when isolation is useful, and register its actual path.
+
+## Leave the next session a handoff
+
+- Save progress with `desk note <task> "<result>" --next "<next action>" --checks "<what was verified>"`.
+- Finish with `desk done <task> "<result>" --next "<remaining work or None>" --checks "<what was verified>"`.
+- Pause unfinished work with `desk pause <task> "<reason>" --next "<next action>"`.
+- Resume a paused task explicitly with `desk resume <task>`.
+- Record checks that were actually run. Explain when verification was not run.
+
+## Find and preserve context
+
+- `mem <words>` searches current shared notes and handoffs; `mem --history <words>` includes older references.
+- Current project files establish what is implemented. The task board records reported work. Notes hold reusable explanations and decisions.
+- Use the existing project and document folders. Keep credentials and private application histories out of shared notes.
+- Native applications own their settings and model choices. Git commits, merges, publishing and cleanup remain explicit actions within the user's request.

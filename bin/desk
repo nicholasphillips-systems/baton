@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Record shared work and handoffs without changing project files or Git history."""
+import argparse
+import os
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import workflow as w
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.set_defaults(all=False, project=None)
+    sub = parser.add_subparsers(dest="command")
+    listing = sub.add_parser("list", aliases=["ls"])
+    listing.add_argument("--all", action="store_true", help="Include completed tasks")
+    listing.add_argument("--project", help="Limit tasks to one project")
+    sub.add_parser("projects", aliases=["p"])
+    add = sub.add_parser("add"); add.add_argument("name"); add.add_argument("folder")
+    start = sub.add_parser("start"); start.add_argument("project"); start.add_argument("task")
+    start.add_argument("owner", nargs="?", default=os.environ.get("DESK_AGENT", "agent"))
+    for name in ["note", "done", "pause", "resume"]:
+        action = sub.add_parser(name)
+        action.add_argument("task")
+        action.add_argument("summary", nargs="?")
+        action.add_argument("--next", dest="next_step")
+        action.add_argument("--checks")
+    show = sub.add_parser("show"); show.add_argument("task")
+    context = sub.add_parser("context"); context.add_argument("project", nargs="?")
+    history = sub.add_parser("history"); history.add_argument("--limit", type=int, default=15)
+    sub.add_parser("doctor")
+    args = parser.parse_args()
+    command = args.command or "list"
+    if command == "add":
+        with w.transaction() as data:
+            key, _ = w.ensure_project(data, args.folder, w.slug(args.name))
+        print(f"Registered {key}.")
+    elif command == "start":
+        task, others = w.start(args.project, args.task, args.owner)
+        for other in others:
+            print(f"Heads up: {other['owner']} also registered {other['id']} in {other['path']}.")
+        print(f"Task: {task['id']}\nWork folder: {task['path']}")
+    elif command in ["note", "done", "pause", "resume"]:
+        state = {"note": None, "done": "done", "pause": "paused", "resume": "active"}[command]
+        task = w.update_task(args.task, args.summary, args.next_step, args.checks, state)
+        print(f"{task['id']}: {task['status']}. Shared handoff saved.")
+    elif command == "show":
+        task = w.load()["tasks"].get(args.task)
+        if task is None:
+            raise w.WorkflowError(f"Unknown task: {args.task}")
+        for name in ["id", "title", "project", "owner", "path", "status", "summary", "next", "checks", "updated"]:
+            print(f"{name.capitalize()}: {task[name] or 'Not recorded.'}")
+    elif command == "context":
+        print(w.render(args.project))
+    elif command in ["projects", "p"]:
+        for key, project in sorted(w.load()["projects"].items()):
+            aliases = ", ".join(project["aliases"])
+            print(f"{key:24} {project['path']}" + (f" (aliases: {aliases})" if aliases else ""))
+    elif command in ["list", "ls"]:
+        data = w.load()
+        selected = w.project_for(data, args.project)[0] if args.project else None
+        tasks = [t for t in data["tasks"].values()
+                 if (args.all or t["status"] != "done") and (not args.project or t["project"] == selected)]
+        if not tasks:
+            print("No open tasks registered. The board records updates; it does not monitor processes.")
+        for task in tasks:
+            print(f"{task['id']} | {task['status']} | {task['owner']} | {task['path']}\n  {task['summary']}\n  Updated: {w.local_time(task['updated'])}")
+    elif command == "history":
+        for e in w.load()["events"][-max(0, args.limit):] if args.limit > 0 else []:
+            print(f"{w.local_time(e['at'])} | {e['action']} | {e['project']} | {e['owner']} | {e['summary']}")
+    elif command == "doctor":
+        data = w.load()
+        missing = [p["path"] for p in data["projects"].values() if not Path(p["path"]).is_dir()]
+        missing += [t["path"] for t in data["tasks"].values() if t["status"] != "done" and not Path(t["path"]).is_dir()]
+        print(f"State version: {data['version']}; projects: {len(data['projects'])}; missing registered folders: {len(set(missing))}")
+        for path in sorted(set(missing)):
+            print(f"Missing: {path}")
+        return 1 if missing else 0
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (w.WorkflowError, OSError) as error:
+        print(f"desk: {error}", file=sys.stderr)
+        sys.exit(1)

@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Find work files and folder descriptions. Refresh explicitly with map update."""
+from contextlib import contextmanager
+import fcntl
+import os
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+import workflow as w
+
+EXCLUDE = {"node_modules", "graphify-out", "site-packages", "__pycache__", "build", "dist", "target", "Private", "Vaults", "VMs"}
+ROOTS = [name for name in os.environ.get("MAP_ROOTS", "Projects:Documents").split(os.pathsep) if name]
+
+
+def folder():
+    return w.user_home() / ".map"
+
+
+@contextmanager
+def locked():
+    folder().mkdir(parents=True, exist_ok=True)
+    with (folder() / "index.lock").open("a") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        yield
+
+
+def read_notes():
+    path = folder() / "notes.tsv"
+    rows = path.read_text().splitlines() if path.exists() else []
+    return dict(line.split("\t", 1) for line in rows if "\t" in line and not line.startswith("#"))
+
+
+def paths():
+    base = w.user_home()
+    found = set()
+    for start in ROOTS:
+        relative = Path(start)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise w.WorkflowError("MAP_ROOTS must contain folder paths relative to the workflow home.")
+        top = base / relative
+        if not top.is_dir() or top.is_symlink():
+            continue
+        for raw, directories, files in os.walk(top, followlinks=False):
+            current = Path(raw)
+            rel = current.relative_to(base).as_posix()
+            found.add(rel + "/")
+            directories[:] = sorted(name for name in directories if not name.startswith(".") and name not in EXCLUDE and not (current / name).is_symlink())
+            for name in files:
+                if not name.startswith(".") and not name.endswith((".key", ".pem", ".kdbx")) and name not in {"auth.json", "credentials.json"}:
+                    found.add(rel + "/" + name)
+    return sorted(found)
+
+
+def overview():
+    lines = ["# Home-folder guide", "", "Find files: `map <words>`. Refresh the file cache: `map update`.",
+             "Current work and handoffs: `desk list` / `desk context <project>`.",
+             "This guide describes locations. It does not decide which project copy or application installation is current.", ""]
+    for name, description in read_notes().items():
+        lines.append(f"- **{'~' if name == '.' else '~/' + name}** — {description}")
+    return "\n".join(lines) + "\n"
+
+
+def update():
+    with locked():
+        found = paths()
+        w.atomic_write(folder() / "files.txt", "\n".join(found) + "\n")
+        w.atomic_write(folder() / "MAP.md", overview())
+    return len(found)
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        print(overview())
+    elif args[0] in ["--help", "-h", "help"]:
+        print(__doc__ + '\nmap [words] | map update | map note <path> "description" | map forget <path> | map doctor')
+    elif args[0] == "update":
+        print(f"Indexed {update():,} work paths. No application-history or generated-graph directories were scanned.")
+    elif args[0] in {"note", "forget"}:
+        if args[0] == "forget":
+            if len(args) != 2:
+                raise w.WorkflowError("Use map forget <path>")
+            path = Path(args[1]).expanduser().resolve()
+            if not path.is_relative_to(w.user_home()):
+                raise w.WorkflowError("Use a path in your home directory.")
+            key = path.relative_to(w.user_home()).as_posix()
+            with locked():
+                notes = read_notes()
+                if key not in notes:
+                    raise w.WorkflowError(f"No description for {key}")
+                del notes[key]
+                w.atomic_write(folder() / "notes.tsv", "".join(f"{name}\t{text}\n" for name, text in notes.items()))
+                w.atomic_write(folder() / "MAP.md", overview())
+            print(f"Removed folder description: {key}")
+            return 0
+        if len(args) < 3:
+            raise w.WorkflowError('Use map note <folder> "description"')
+        path = Path(args[1]).expanduser().resolve() if args[1] != "~" else w.user_home()
+        if not path.exists() or not path.is_relative_to(w.user_home()):
+            raise w.WorkflowError("Use an existing folder in your home directory.")
+        key = path.relative_to(w.user_home()).as_posix()
+        with locked():
+            notes = read_notes(); notes[key] = w.clean(" ".join(args[2:]))
+            w.atomic_write(folder() / "notes.tsv", "".join(f"{name}\t{text}\n" for name, text in notes.items()))
+            w.atomic_write(folder() / "MAP.md", overview())
+        print(f"Updated folder description: {key}")
+    elif args[0] == "doctor":
+        missing = [name for name in read_notes() if not (w.user_home() / name).exists()]
+        print(f"Folder descriptions: {len(read_notes())}; missing paths: {len(missing)}")
+        for name in missing:
+            print(f"Missing: ~/{name}")
+        return 1 if missing else 0
+    else:
+        words = [word.lower() for word in args]
+        count = 0
+        for name, description in read_notes().items():
+            if all(word in (name + " " + description).lower() for word in words):
+                print(f"~/{name}: {description}"); count += 1
+        index = folder() / "files.txt"
+        if not index.exists():
+            if not count:
+                print("No path cache yet. Run map update to build it.")
+            return 0
+        found = [line for line in index.read_text().splitlines() if all(word in line.lower() for word in words)]
+        found.sort(key=lambda line: (line.count("/"), len(line), line))
+        for name in found[:40]:
+            print("~/" + name)
+        if not found and not count:
+            print("No match. Try fewer words or run map update for newly created files.")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (w.WorkflowError, OSError) as error:
+        print(f"map: {error}", file=sys.stderr)
+        sys.exit(1)

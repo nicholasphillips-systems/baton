@@ -1,0 +1,5 @@
+# Shared workspace instructions
+
+Read `~/AGENTS.md` for the shared workflow.
+Use `desk context <project>` to find the last handoff, then inspect the actual project files.
+Task status is reported by agents. Native applications retain their own settings.

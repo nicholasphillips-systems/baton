@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Open a native AI application in the selected project folder.
+set -euo pipefail
+
+WORKSPACE="${WORKSPACE:-$PWD}"
+AGENT="${1:-}"
+IN_TERMINAL=0
+if [ -z "$AGENT" ]; then
+  printf 'Usage: launch-ai <app> [--in-terminal]\n       launch-ai --exec "App name" -- command [arguments]\n' >&2
+  exit 2
+fi
+shift
+if [[ "${1:-}" == "--in-terminal" ]]; then
+  IN_TERMINAL=1
+  shift
+fi
+if [[ "$AGENT" != "--exec" && $# -gt 0 ]]; then
+  printf 'Unexpected argument: %s\n' "$1" >&2
+  exit 2
+fi
+
+IS_GUI=0
+case "$AGENT" in
+  claude) TITLE='Claude Code'; COMMAND=(claude) ;;
+  codex) TITLE='Codex'; COMMAND=(codex) ;;
+  gemini) TITLE='Gemini'; COMMAND=(gemini) ;;
+  qwen) TITLE='Qwen Code'; COMMAND=(qwen) ;;
+  kilo) TITLE='Kilo'; COMMAND=(kilo "$WORKSPACE") ;;
+  opencode) TITLE='OpenCode'; COMMAND=(opencode "$WORKSPACE") ;;
+  hermes) TITLE='Hermes'; COMMAND=(hermes --tui --in "$WORKSPACE") ;;
+  devin) TITLE='Devin'; COMMAND=(devin "$WORKSPACE") ;;
+  cursor) TITLE='Cursor'; COMMAND=(cursor "$WORKSPACE"); IS_GUI=1 ;;
+  ollama) TITLE='Ollama'; COMMAND=(ollama) ;;
+  --exec)
+    [ $# -ge 3 ] && [ "$2" = '--' ] || {
+      printf 'Usage: launch-ai --exec "App name" -- command [arguments]\n' >&2
+      exit 2
+    }
+    TITLE="$1"
+    shift 2
+    COMMAND=("$@")
+    IS_GUI=1
+    ;;
+  *) printf 'Unknown application: %s\nUse --exec for another installed application.\n' "$AGENT" >&2; exit 2 ;;
+esac
+
+cd "$WORKSPACE"
+command -v "${COMMAND[0]}" >/dev/null 2>&1 || {
+  printf 'Application is not on PATH: %s\n' "${COMMAND[0]}" >&2
+  exit 127
+}
+
+if [ "$IS_GUI" -eq 0 ] && [ "$IN_TERMINAL" -eq 0 ]; then
+  for terminal in konsole gnome-terminal alacritty kitty xfce4-terminal foot ptyxis xterm x-terminal-emulator; do
+    command -v "$terminal" >/dev/null 2>&1 || continue
+    case "$terminal" in
+      konsole) exec konsole --workdir "$WORKSPACE" -p tabtitle="$TITLE" -e "$0" "$AGENT" --in-terminal ;;
+      gnome-terminal) exec gnome-terminal --working-directory="$WORKSPACE" --title="$TITLE" -- "$0" "$AGENT" --in-terminal ;;
+      alacritty) exec alacritty --working-directory "$WORKSPACE" --title "$TITLE" -e "$0" "$AGENT" --in-terminal ;;
+      kitty) exec kitty --directory "$WORKSPACE" --title "$TITLE" "$0" "$AGENT" --in-terminal ;;
+      xfce4-terminal) exec xfce4-terminal --working-directory="$WORKSPACE" --title="$TITLE" -x "$0" "$AGENT" --in-terminal ;;
+      foot) exec foot --working-directory="$WORKSPACE" --title="$TITLE" "$0" "$AGENT" --in-terminal ;;
+      ptyxis) exec ptyxis --working-directory="$WORKSPACE" -- "$0" "$AGENT" --in-terminal ;;
+      *) exec "$terminal" -e "$0" "$AGENT" --in-terminal ;;
+    esac
+  done
+  printf 'No terminal emulator found. Run launch-ai %s --in-terminal in an existing terminal.\n' "$AGENT" >&2
+  exit 1
+fi
+
+export DESK_AGENT="$AGENT"
+exec "${COMMAND[@]}"
