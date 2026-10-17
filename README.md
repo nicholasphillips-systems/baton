@@ -1,13 +1,13 @@
-# Threadline
+# Baton
 
-**Different agents. One continuous thread.**
+**Pass the work between AI agents without losing your place.**
 
-[![Tests: GitHub Actions](assets/badges/ci.png)](https://github.com/nicholasphillips-systems/threadline/actions/workflows/ci.yml)
+[![Tests: GitHub Actions](assets/badges/ci.png)](https://github.com/nicholasphillips-systems/baton/actions/workflows/ci.yml)
 [![Python 3.10+](assets/badges/python.png)](https://www.python.org/)
 [![Platform: Linux](assets/badges/linux.png)](#install)
 [![License: MIT](assets/badges/license.png)](LICENSE)
 
-Threadline keeps project context available when you return tomorrow or switch AI tools. Work stays in its real folder. Each session saves what changed, what was checked, what is waiting and what should happen next. The next session reads that handoff and continues.
+Baton keeps project context available when you return tomorrow or switch AI tools. Work stays in its real folder. Each session saves what changed, what was checked, what is waiting and what should happen next. The next session reads that handoff and continues.
 
 Each project has separate tasks and a saved handoff. Move between projects while keeping track of where each one stands.
 
@@ -16,7 +16,7 @@ Each project has separate tasks and a saved handoff. Move between projects while
 | `desk` | Register projects, track tasks and read or save handoffs |
 | `map` | Find work-file paths and folder descriptions |
 | `mem` | Find shared reference notes and project handoffs |
-| `launch-ai` | Open an installed native application in a project folder |
+| `launch-ai` | Open an installed native application in a project folder (Linux desktop, in `desktop/`) |
 
 The core uses the Python standard library. Native applications keep their own models, credentials and settings. Agents explicitly read and save context following shared instructions.
 
@@ -25,8 +25,8 @@ The core uses the Python standard library. Native applications keep their own mo
 Requires Linux, Python 3.10+ and Bash. Git provides optional checkout and worktree inspection. Install your preferred AI applications separately.
 
 ```bash
-git clone https://github.com/nicholasphillips-systems/threadline.git
-cd threadline
+git clone https://github.com/nicholasphillips-systems/baton.git
+cd baton
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
 ```
@@ -121,8 +121,8 @@ Launching leaves task status and saved context alone. It does not inject handoff
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `WORKFLOW_USER_HOME` | Current user's home | Base for workflow paths |
-| `DESK_STATE_DIR` | `~/.local/state/threadline` | Registry and recovery files |
-| `SHARED_NOTES_DIR` | `~/Documents/Threadline` | Shared Markdown notes |
+| `DESK_STATE_DIR` | `~/.local/state/baton` | Registry and recovery files |
+| `SHARED_NOTES_DIR` | `~/Documents/Baton` | Shared Markdown notes |
 | `WORKFLOW_BIN_DIR` | `~/.local/bin` | Installed command links |
 | `MAP_ROOTS` | `Projects:Documents` | Colon-separated folders relative to workflow home |
 | `DESK_AGENT` | `agent` | Default owner when `desk start` omits one |
@@ -135,7 +135,7 @@ Personal task data and notes stay outside the repository. See [the architecture 
 
 ```bash
 python3 -m unittest discover -s tests -v
-shellcheck -S warning install.sh bin/launch-ai
+shellcheck -S warning install.sh desktop/launch-ai
 git diff --check
 ```
 

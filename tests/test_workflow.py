@@ -22,10 +22,11 @@ class WorkflowTests(unittest.TestCase):
         self.env.pop("DESK_STATE_DIR", None)
         self.env.pop("SHARED_NOTES_DIR", None)
         self.env["WORKFLOW_USER_HOME"] = str(self.home)
-        self.state = self.home / ".local/state/threadline/workspace.json"
+        self.state = self.home / ".local/state/baton/workspace.json"
 
     def run_tool(self, name, *arguments, check=True, env=None):
-        return subprocess.run([str(ROOT / "bin" / name), *map(str, arguments)],
+        folder = "desktop" if name == "launch-ai" else "bin"
+        return subprocess.run([str(ROOT / folder / name), *map(str, arguments)],
                               env=env or self.env, cwd=self.project, capture_output=True,
                               text=True, check=check, timeout=20)
 
@@ -178,7 +179,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("vault.txt", index)
 
     def test_mem_searches_shared_notes_not_native_memories(self):
-        shared = self.home / "Documents/Threadline/Systems"; shared.mkdir(parents=True)
+        shared = self.home / "Documents/Baton/Systems"; shared.mkdir(parents=True)
         (shared / "Sample.md").write_text("# Sample\nshared-test-marker")
         private = self.home / ".claude/projects/-home-example/memory"; private.mkdir(parents=True)
         (private / "private.md").write_text("private-test-marker")
@@ -316,7 +317,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("Temporary reference", (self.home / ".map/notes.tsv").read_text())
 
     def test_mem_history_is_explicit(self):
-        notes = self.home / "Documents/Threadline"
+        notes = self.home / "Documents/Baton"
         for folder in ["Systems", "Runs"]:
             (notes / folder).mkdir(parents=True)
         (notes / "Systems/Current.md").write_text("# Current\nshared-example-marker")

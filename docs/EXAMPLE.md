@@ -11,8 +11,8 @@ Run these blocks in one shell. They use a temporary workflow home and keep the r
 ```bash
 workflow_demo_root="$(mktemp -d -t workflow-demo.XXXXXX)"
 export WORKFLOW_USER_HOME="$workflow_demo_root"
-export DESK_STATE_DIR="$workflow_demo_root/.local/state/threadline"
-export SHARED_NOTES_DIR="$workflow_demo_root/Documents/Threadline"
+export DESK_STATE_DIR="$workflow_demo_root/.local/state/baton"
+export SHARED_NOTES_DIR="$workflow_demo_root/Documents/Baton"
 mkdir -p "$workflow_demo_root/Projects/Website" \
   "$workflow_demo_root/Projects/Music" \
   "$workflow_demo_root/Projects/Interview"

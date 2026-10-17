@@ -1,4 +1,4 @@
-# Contributing to Threadline
+# Contributing to Baton
 
 Small, focused improvements are welcome. Open an issue with the problem and expected behavior, or submit a pull request describing the change and checks run.
 
@@ -6,7 +6,7 @@ Requirements: Linux, Python 3.10+, Bash, Git and ShellCheck. The core has no thi
 
 ```bash
 python3 -m unittest discover -s tests -v
-shellcheck -S warning install.sh bin/launch-ai
+shellcheck -S warning install.sh desktop/launch-ai
 git diff --check
 ```
 

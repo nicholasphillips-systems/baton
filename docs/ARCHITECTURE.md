@@ -1,6 +1,6 @@
 # Architecture
 
-Threadline is a set of local commands. Agents read shared project records and leave explicit handoffs. There is no background service or provider-specific conversation store.
+Baton is a set of local commands. Agents read shared project records and leave explicit handoffs. There is no background service or provider-specific conversation store.
 
 | Source | Responsibility |
 | --- | --- |
@@ -8,13 +8,13 @@ Threadline is a set of local commands. Agents read shared project records and le
 | `bin/desk` | Project and task command line |
 | `bin/map` | Explicit indexing and path/description search |
 | `bin/mem` | Shared Markdown and latest-handoff search |
-| `bin/launch-ai` | Native application dispatch in a selected working folder |
+| `desktop/launch-ai` | Native application dispatch in a selected working folder |
 | `install.sh` | Link four commands; optionally install instructions |
 | `scripts/configure-workflow.py` | Install generic instructions, backing up replacements |
 
 ## Task records and sessions
 
-The registry defaults to `~/.local/state/threadline/workspace.json`. Its three collections are `projects`, `tasks` and `events`. Each project also stores its latest handoff.
+The registry defaults to `~/.local/state/baton/workspace.json`. Its three collections are `projects`, `tasks` and `events`. Each project also stores its latest handoff.
 
 A task records its ID, title, project, owner, actual working path, status, summary, next action, checks and update time. Updates copy those fields into the project's handoff and append an event. Status is explicitly `active`, `paused` or `done`; notes retain the current status.
 

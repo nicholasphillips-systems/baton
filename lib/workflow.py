@@ -20,11 +20,11 @@ def user_home():
 
 
 def state_dir():
-    return Path(os.environ.get("DESK_STATE_DIR", user_home() / ".local/state/threadline")).expanduser().resolve()
+    return Path(os.environ.get("DESK_STATE_DIR", user_home() / ".local/state/baton")).expanduser().resolve()
 
 
 def notes_dir():
-    return Path(os.environ.get("SHARED_NOTES_DIR", user_home() / "Documents/Threadline")).expanduser()
+    return Path(os.environ.get("SHARED_NOTES_DIR", user_home() / "Documents/Baton")).expanduser()
 
 
 def timestamp():
