@@ -1,0 +1,14 @@
+{
+  "name": "baton",
+  "displayName": "Baton",
+  "version": "0.2.0",
+  "description": "Hand off work between sessions and AI agents. Adds the desk, map and mem commands and the /baton:pickup and /baton:handoff skills, which read and save a per-project handoff: what changed, what was checked and the next step. Local only: state is a JSON file under ~/.local/state/baton/, Git is read-only, and there are no hooks or network calls.",
+  "author": {
+    "name": "Nick Phillips",
+    "url": "https://github.com/nicholasphillips-systems"
+  },
+  "homepage": "https://github.com/nicholasphillips-systems/baton",
+  "repository": "https://github.com/nicholasphillips-systems/baton",
+  "license": "MIT",
+  "keywords": ["handoff", "context", "tasks", "multi-agent", "sessions"]
+}

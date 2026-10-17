@@ -35,6 +35,22 @@ The installer links the four commands into `~/.local/bin`. Keep the checkout whe
 
 To install the optional shared agent instructions, review `templates/`, then run `./install.sh --instructions`. This replaces `~/AGENTS.md` and the supported instruction entrypoints, backing up existing files under the state directory's `recovery/` folder. Plain installation leaves instruction files alone. Neither mode changes native application settings.
 
+## Claude Code plugin
+
+Baton also installs as a Claude Code plugin. The plugin puts `desk`, `map` and `mem` on Claude's `PATH` and adds two skills, so there is nothing else to install:
+
+```text
+/plugin marketplace add nicholasphillips-systems/baton
+/plugin install baton@baton
+```
+
+| Skill | What it does |
+| --- | --- |
+| `/baton:pickup` | Reads the project's saved handoff and open tasks, then checks the real files before continuing |
+| `/baton:handoff` | Saves what changed, what was checked and the next step, so the next session or another agent can continue |
+
+The plugin has no hooks and makes no network calls. Everything stays in local files: the registry under `~/.local/state/baton/` and, if you use one, the notes folder. Git is read only. It needs Python 3.10+ and is tested on Linux.
+
 ## A session and its handoff
 
 Register an existing project folder and start a task:

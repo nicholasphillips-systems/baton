@@ -3,6 +3,7 @@
 ## 0.2.0
 
 - Renamed from Threadline to Baton. Default state is now `~/.local/state/baton` and default notes `~/Documents/Baton`; set `DESK_STATE_DIR` and `SHARED_NOTES_DIR` to keep existing folders.
+- Installs as a Claude Code plugin: `desk`, `map` and `mem` on Claude's `PATH`, plus `/baton:pickup` and `/baton:handoff` skills. No hooks, no network calls.
 - `launch-ai` moved to `desktop/` so the plugin doesn't put a desktop launcher on Claude's `PATH`. `install.sh` still links it.
 - A project registered at the home folder no longer absorbs other projects or unregistered folders beneath it.
 

@@ -1,0 +1,15 @@
+{
+  "name": "baton",
+  "description": "Baton: local handoffs between sessions and AI agents.",
+  "owner": {
+    "name": "Nick Phillips",
+    "url": "https://github.com/nicholasphillips-systems"
+  },
+  "plugins": [
+    {
+      "name": "baton",
+      "source": "./",
+      "description": "Hand off work between sessions and AI agents with local, per-project handoffs."
+    }
+  ]
+}
