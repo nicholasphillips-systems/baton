@@ -255,6 +255,25 @@ class WorkflowTests(unittest.TestCase):
         text = self.desk("context", self.project).stdout
         self.assertNotIn("Current Git checkout", text)
 
+    def test_home_project_does_not_absorb_another_project(self):
+        self.desk("start", self.home, "home task", "first")
+        self.desk("note", "home-task", "Home-only handoff")
+        self.desk("add", "example", self.project)
+        self.desk("start", "example", "project task", "second")
+        data = self.data()
+        self.assertEqual(len(data["projects"]), 2)
+        self.assertEqual(data["projects"]["example"]["path"], str(self.project))
+        self.assertEqual(data["tasks"]["project-task"]["project"], "example")
+        self.assertEqual(data["tasks"]["project-task"]["path"], str(self.project))
+        self.assertNotIn("Home-only handoff", self.desk("context", "example").stdout)
+
+    def test_unregistered_folder_does_not_inherit_home_handoff(self):
+        self.desk("start", self.home, "home task", "first")
+        self.desk("note", "home-task", "Home-only handoff")
+        text = self.desk("context", self.project).stdout
+        self.assertNotIn("Home-only handoff", text)
+        self.assertIn("No handoff recorded", text)
+
     def test_native_launches_do_not_depend_on_shared_state(self):
         config = self.home / ".codex/config.toml"
         config.parent.mkdir(); config.write_text('model = "user-choice"\n')

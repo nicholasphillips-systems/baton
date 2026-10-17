@@ -150,7 +150,8 @@ def project_for(data, query):
         raise WorkflowError(f"Unknown project or folder: {query}. Use desk projects or a real folder path.")
     primary = canonical(path)
     matches = [(key, p) for key, p in data["projects"].items()
-               if primary == Path(p["path"]) or path.is_relative_to(Path(p["path"]))]
+               if primary == Path(p["path"]) or
+               (Path(p["path"]) != user_home() and path.is_relative_to(Path(p["path"])))]
     if matches:
         key, _ = max(matches, key=lambda item: len(item[1]["path"]))
         return key, path
